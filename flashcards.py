@@ -14,10 +14,7 @@ st.set_page_config(
 # --- Custom CSS ---
 st.markdown("""
 <style>
-    /* Clean up general spacing */
     .block-container { padding-top: 2rem; }
-
-    /* Card container */
     .card-container {
         background: #1a1a2e;
         border: 1px solid #30305a;
@@ -41,15 +38,8 @@ st.markdown("""
         margin: 0.3rem 0;
         color: #e0e0e0;
     }
-    .card-field-label {
-        color: #7a7aad;
-    }
-    .card-field-value {
-        color: #ffffff;
-        font-weight: 600;
-    }
-
-    /* Score bar */
+    .card-field-label { color: #7a7aad; }
+    .card-field-value { color: #ffffff; font-weight: 600; }
     .score-bar {
         display: flex;
         justify-content: space-between;
@@ -63,14 +53,7 @@ st.markdown("""
     }
     .score-correct { color: #4caf50; font-weight: 600; }
     .score-wrong { color: #f44336; font-weight: 600; }
-
-    /* Button row styling */
-    .stButton > button {
-        width: 100%;
-        border-radius: 6px;
-    }
-
-    /* Sidebar section headers */
+    .stButton > button { width: 100%; border-radius: 6px; }
     .sidebar-section {
         font-size: 0.8rem;
         color: #999;
@@ -79,16 +62,52 @@ st.markdown("""
         margin-top: 1rem;
         margin-bottom: 0.25rem;
     }
+    .ship-image-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+    .ship-image-wrapper img {
+        width: 100%;
+        border-radius: 8px;
+    }
+    .tech-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 1rem;
+        letter-spacing: 1px;
+        font-family: monospace;
+        line-height: 1.4;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    .tech-badge-t2 {
+        background: linear-gradient(135deg, #b8860b, #daa520);
+        color: #fff;
+        border: 1px solid #c6981f;
+    }
+    .tech-badge-t3 {
+        background: linear-gradient(135deg, #1a7a5a, #2ecc71);
+        color: #fff;
+        border: 1px solid #27ae60;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-PRESETS_FILE = "flashcard_presets.json"
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+PRESETS_FILE = os.path.join(APP_DIR, "flashcard_presets.json")
+DATA_FILE = os.path.join(APP_DIR, "eve_ships_complete.xlsx")
 
 # --- Load Data ---
 @st.cache_data
 def load_data():
-    df = pd.read_excel("eve_ships_complete.xlsx")
-    return df
+    if not os.path.exists(DATA_FILE):
+        st.error("Ship data file not found. Run the launcher script to generate it.")
+        st.stop()
+    return pd.read_excel(DATA_FILE)
 
 df = load_data()
 
@@ -213,12 +232,34 @@ def get_all_presets():
 def safe_cols(col_list):
     return [c for c in col_list if c in AVAILABLE_COLS]
 
+def get_tech_level(ship_row):
+    if 'Tech Level' not in ship_row.index:
+        return 1
+    val = ship_row.get('Tech Level')
+    if pd.isna(val):
+        return 1
+    return int(val)
+
+def render_ship_image(image_url, tech_level):
+    badge_html = ""
+    if tech_level == 2:
+        badge_html = '<div class="tech-badge tech-badge-t2">T2</div>'
+    elif tech_level == 3:
+        badge_html = '<div class="tech-badge tech-badge-t3">T3</div>'
+
+    st.markdown(
+        f'<div class="ship-image-wrapper">'
+        f'<img src="{image_url}" alt="Ship render">'
+        f'{badge_html}'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+
 # =====================================================
 # SIDEBAR
 # =====================================================
 st.sidebar.markdown("## Flashcard Configuration")
 
-# --- Presets ---
 st.sidebar.markdown('<div class="sidebar-section">Presets</div>', unsafe_allow_html=True)
 
 all_presets = get_all_presets()
@@ -249,7 +290,6 @@ if preset_data:
 
 st.sidebar.markdown("---")
 
-# --- Ship Classes ---
 st.sidebar.markdown('<div class="sidebar-section">Ship Classes</div>', unsafe_allow_html=True)
 selected_classes = st.sidebar.multiselect(
     "Ship Classes",
@@ -261,7 +301,6 @@ selected_classes = st.sidebar.multiselect(
 
 st.sidebar.markdown("---")
 
-# --- Front ---
 st.sidebar.markdown('<div class="sidebar-section">Front of Card</div>', unsafe_allow_html=True)
 show_image_front = st.sidebar.checkbox(
     "Show ship image",
@@ -278,7 +317,6 @@ front_fields = st.sidebar.multiselect(
 
 st.sidebar.markdown("---")
 
-# --- Back ---
 st.sidebar.markdown('<div class="sidebar-section">Back of Card</div>', unsafe_allow_html=True)
 show_image_back = st.sidebar.checkbox(
     "Show ship image",
@@ -295,7 +333,6 @@ back_fields = st.sidebar.multiselect(
 
 st.sidebar.markdown("---")
 
-# --- Options ---
 st.sidebar.markdown('<div class="sidebar-section">Display Options</div>', unsafe_allow_html=True)
 res_as_percent = st.sidebar.checkbox(
     "Show resistances as percentages",
@@ -305,7 +342,6 @@ res_as_percent = st.sidebar.checkbox(
 
 st.sidebar.markdown("---")
 
-# --- Save Preset ---
 st.sidebar.markdown('<div class="sidebar-section">Save Current Configuration</div>', unsafe_allow_html=True)
 new_preset_name = st.sidebar.text_input("Preset name", placeholder="e.g. Frigate Visual Drill", label_visibility="collapsed")
 if st.sidebar.button("Save Preset"):
@@ -326,7 +362,6 @@ if st.sidebar.button("Save Preset"):
     else:
         st.sidebar.error("Enter a preset name.")
 
-# --- Delete Preset ---
 custom_presets = load_custom_presets()
 if custom_presets:
     st.sidebar.markdown("---")
@@ -339,7 +374,6 @@ if custom_presets:
         st.sidebar.success(f"Deleted: {del_target}")
         st.rerun()
 
-# --- Debug ---
 with st.sidebar.expander("Column Reference"):
     st.write(AVAILABLE_COLS)
 
@@ -353,7 +387,6 @@ if len(filtered_df) == 0:
     st.warning("No ships match your current filter. Adjust ship classes in the sidebar.")
     st.stop()
 
-# --- Session State ---
 if 'card_index' not in st.session_state:
     st.session_state.card_index = 0
 if 'flipped' not in st.session_state:
@@ -374,15 +407,12 @@ if st.session_state.last_filter_hash != filter_hash:
     st.session_state.flipped = False
     st.session_state.last_filter_hash = filter_hash
 
-# Clamp index
 max_idx = len(st.session_state.deck_order) - 1
 if st.session_state.card_index > max_idx:
     st.session_state.card_index = max_idx
 
-# --- Header ---
 st.markdown("## EVE Online — Ship Flashcards")
 
-# Score and position bar
 card_num = st.session_state.card_index + 1
 total = len(filtered_df)
 correct = st.session_state.score_correct
@@ -398,7 +428,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- Deck Controls ---
 col_shuf, col_reset = st.columns(2)
 with col_shuf:
     if st.button("Shuffle Deck"):
@@ -413,13 +442,12 @@ with col_reset:
         st.session_state.score_wrong = 0
         st.rerun()
 
-# --- Current Ship ---
 idx = st.session_state.deck_order[st.session_state.card_index]
 ship = filtered_df.iloc[idx]
 type_id = int(ship['typeID'])
+tech_level = get_tech_level(ship)
 image_url = f"https://images.evetech.net/types/{type_id}/render?size=512"
 
-# --- Value Formatting ---
 def format_value(col, val):
     if pd.isna(val):
         return "—"
@@ -434,21 +462,6 @@ def format_value(col, val):
         return f"{val:,.2f}"
     return str(val)
 
-# --- Render Card ---
-def render_card(fields, show_image, side_label):
-    st.markdown(
-        f'<div class="card-container">'
-        f'<div class="card-label">{side_label}</div>'
-        f'</div>',
-        unsafe_allow_html=True
-    )
-    # Streamlit can't nest widgets inside raw HTML, so we render below the label
-    # Re-do with pure streamlit for image + fields inside a visual block
-
-    # Actually render with streamlit components
-    pass
-
-# Using streamlit containers for clean card look
 st.markdown("---")
 
 side_label = "FRONT" if not st.session_state.flipped else "BACK"
@@ -460,7 +473,7 @@ st.caption(side_label)
 if active_image:
     col_img_l, col_img_c, col_img_r = st.columns([1, 3, 1])
     with col_img_c:
-        st.image(image_url, use_container_width=True)
+        render_ship_image(image_url, tech_level)
 
 if active_fields:
     for col in active_fields:
@@ -472,7 +485,6 @@ elif not active_image:
 
 st.markdown("---")
 
-# --- Navigation ---
 c1, c2, c3, c4, c5 = st.columns(5)
 
 with c1:
@@ -506,6 +518,5 @@ with c5:
         st.session_state.flipped = False
         st.rerun()
 
-# --- Footer ---
 st.markdown("---")
 st.caption("Configure card sides and ship filters using the sidebar. Save configurations as presets for quick access.")

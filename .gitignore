@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+sde.sqlite
+sde.sqlite.bz2
+eve_ships_complete.xlsx
+flashcard_presets.json

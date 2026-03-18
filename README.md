@@ -6,6 +6,12 @@ A configurable flashcard application for learning EVE Online ship identification
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+## Try it now
+
+**[Launch in Browser](https://your-username-eve-ship-flashcards.streamlit.app)** — no install required
+
+Or download for offline use from the [Releases page](https://github.com/YOUR_USERNAME/eve-ship-flashcards/releases).
+
 ## Features
 
 - **400+ ships** with 100+ data attributes per ship
